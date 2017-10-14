@@ -72,7 +72,7 @@ class ExampleSpider(scrapy.Spider):
             yield request
 
     def _song_parse(self, response):
-        self.logger.info("[SONG] {}: {}".format(
+        self.logger.debug("[SONG] {}: {}".format(
             response.meta['album']['artist'], response.meta['song']))
 
         song_meta = copy(response.meta['album'])

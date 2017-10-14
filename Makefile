@@ -1,4 +1,4 @@
-.PHONY: clean start test crawl
+.PHONY: clean start test crawl crawl-proxy
 
 TAG=$(shell git symbolic-ref -q --short HEAD)
 
@@ -12,7 +12,10 @@ env/bin/python:
 	#env/bin/python setup.py develop
 
 crawl: env/bin/python
-	env/bin/scrapy runspider lyrics_crawler/spiders/metro_lyrics.py
+	env/bin/scrapy crawl --loglevel=INFO MetroLyrics.com
+
+crawl-proxy: env/bin/python
+	http_proxy=http://localhost:20020 env/bin/scrapy crawl --loglevel=INFO MetroLyrics.com
 
 clean:
 	rm -rfv bin develop-eggs dist downloads eggs env parts .cache .scannerwork

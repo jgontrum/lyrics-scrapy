@@ -25,4 +25,9 @@ class LyricsCrawlerPipeline(object):
         language = langid.classify(item['lyrics'])
         item['language'] = language[0]
 
+        item['artist'] = item['artist'].strip()
+        item['album'] = item['album'].strip()
+        item['title'] = item['title'].strip()
+        item['lyrics'] = item['lyrics'].strip()
+
         return item
