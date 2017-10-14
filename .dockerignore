@@ -1,0 +1,13 @@
+**/*.cache
+**/__pycache__
+*.egg-info/
+.DS_Store
+.cache
+.coverage
+.git
+.gitignore
+Dockerfile
+README.md
+coverage*
+env/
+sonar*
