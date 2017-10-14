@@ -64,7 +64,6 @@ class ExampleSpider(scrapy.Spider):
                 request.meta['song'] = title
                 yield request
 
-        return  # TODO remove
         # Follow next page
         next_page = self._get_next_page(response)
         if next_page:
@@ -122,9 +121,7 @@ class ExampleSpider(scrapy.Spider):
             request = response.follow(artist_url, self._artist_page_parse)
             request.meta['artist'] = meta
             yield request
-            return  # TODO REMOVE
 
-        return  # TODO REMOVE
         # Follow next page
         next_page = self._get_next_page(response)
         if next_page:
