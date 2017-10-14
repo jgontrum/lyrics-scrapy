@@ -4,6 +4,8 @@ from copy import copy
 import scrapy
 import re
 
+from lyrics_crawler.items import LyricsCrawlerItem
+
 
 class ExampleSpider(scrapy.Spider):
     name = 'MetroLyrics.com'
@@ -86,11 +88,9 @@ class ExampleSpider(scrapy.Spider):
                                 '//p[contains(@class, "verse")]' +
                                 '//text()').extract()
 
-        song_meta['lyrics'] = "\n".join([
-            v.strip() for v in verses if v.strip()
-        ])
+        song_meta['lyrics'] = verses
 
-        yield song_meta
+        yield LyricsCrawlerItem(song_meta)
 
     def _artist_list_parse(self, response):
         for artist in response.xpath(
