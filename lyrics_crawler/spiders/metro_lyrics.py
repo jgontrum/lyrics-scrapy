@@ -26,7 +26,7 @@ class ExampleSpider(scrapy.Spider):
 
     def _artist_page_parse(self, response):
         meta = response.meta['artist']
-        self.logger.info("Artist: {}".format(meta['artist']))
+        self.logger.debug("[ARTIST] {}".format(meta['artist']))
 
         # Get by-album page url
         album_list = response.xpath(
@@ -72,7 +72,8 @@ class ExampleSpider(scrapy.Spider):
             yield request
 
     def _song_parse(self, response):
-        self.logger.info("Song: {}".format(response.meta['song']))
+        self.logger.info("[SONG] {}: {}".format(
+            response.meta['album']['artist'], response.meta['song']))
 
         song_meta = copy(response.meta['album'])
         song_meta['title'] = response.meta['song']

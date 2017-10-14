@@ -15,9 +15,12 @@ class LyricsCrawlerPipeline(object):
         ])
 
         if len(item['lyrics']) < 10:
-            raise DropItem("Lyrics too short")
+            raise DropItem(
+                "{artist}: {title} - Lyrics too short: '{lyrics}'".format
+                (**item))
         elif "Lyrics currently unavailable" in item['lyrics']:
-            raise DropItem("Lyrics not available")
+            raise DropItem(
+                "{artist}: {title} - Lyrics not available".format(**item))
 
         language = langid.classify(item['lyrics'])
         item['language'] = language[0]
