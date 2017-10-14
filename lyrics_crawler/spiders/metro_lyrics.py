@@ -13,7 +13,7 @@ class ExampleSpider(scrapy.Spider):
 
     start_urls = [
         f"http://www.metrolyrics.com/artists-{letter}.html"
-        for letter in "1"  # "1abcdefghijklmnopqrstuvwxyz"
+        for letter in "abcdefghijklmnopqrstuvwxyz"
     ]
 
     def _get_next_page(self, response):
