@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import os
+
 
 # Scrapy settings for lyrics_crawler project
 #
@@ -14,7 +16,6 @@ BOT_NAME = 'lyrics_crawler'
 SPIDER_MODULES = ['lyrics_crawler.spiders']
 NEWSPIDER_MODULE = 'lyrics_crawler.spiders'
 
-
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'lyrics_crawler (+http://www.yourdomain.com)'
 
@@ -22,7 +23,7 @@ NEWSPIDER_MODULE = 'lyrics_crawler.spiders'
 ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-#CONCURRENT_REQUESTS = 32
+CONCURRENT_REQUESTS = 16
 
 # Configure a delay for requests for the same website (default: 0)
 # See http://scrapy.readthedocs.org/en/latest/topics/settings.html#download-delay
@@ -33,7 +34,7 @@ ROBOTSTXT_OBEY = False
 #CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
-#COOKIES_ENABLED = False
+COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
@@ -46,15 +47,17 @@ ROBOTSTXT_OBEY = False
 
 # Enable or disable spider middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
-#SPIDER_MIDDLEWARES = {
-#    'lyrics_crawler.middlewares.LyricsCrawlerSpiderMiddleware': 543,
-#}
+SPIDER_MIDDLEWARES = {
+    'scrapy.spidermiddlewares.depth.DepthMiddleware': 100
+}
 
 # Enable or disable downloader middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
     'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
-    'random_useragent.RandomUserAgentMiddleware': 400
+    'scrapy.downloadermiddlewares.retry.RetryMiddleware': 100,
+    'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': 20,
+    'random_useragent.RandomUserAgentMiddleware': 10
 }
 
 # Enable or disable extensions
@@ -79,23 +82,35 @@ AUTOTHROTTLE_START_DELAY = 1
 # AUTOTHROTTLE_MAX_DELAY = 60
 # The average number of requests Scrapy should be sending in parallel to
 # each remote server
-AUTOTHROTTLE_TARGET_CONCURRENCY = 10.0
+AUTOTHROTTLE_TARGET_CONCURRENCY = 16.0
 # Enable showing throttling stats for every response received:
 #AUTOTHROTTLE_DEBUG = False
 
 # Enable and configure HTTP caching (disabled by default)
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
-#HTTPCACHE_ENABLED = True
-#HTTPCACHE_EXPIRATION_SECS = 0
-#HTTPCACHE_DIR = 'httpcache'
-#HTTPCACHE_IGNORE_HTTP_CODES = []
-#HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+HTTPCACHE_ENABLED = True
+HTTPCACHE_EXPIRATION_SECS = 0
+HTTPCACHE_DIR = 'httpcache'
+HTTPCACHE_IGNORE_HTTP_CODES = []
+HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 LOG_FORMATTER = 'lyrics_crawler.logformatter.PoliteLogFormatter'
 
-ELASTICSEARCH_SERVERS = ['http://localhost:9200']
-ELASTICSEARCH_INDEX = 'lyrics20171014'
+ELASTICSEARCH_SERVERS = [os.environ.get("ES_URL", "http://localhost:9200")]
+ELASTICSEARCH_INDEX = os.environ.get("ES_INDEX", "lyrics")
 ELASTICSEARCH_TYPE = 'song'
 ELASTICSEARCH_UNIQ_KEY = 'song_id'
 
 USER_AGENT_LIST = "config/useragents.txt"
+
+RETRY_TIMES = 20
+RETRY_HTTP_CODES = [400, 404, 408, 500, 502, 503, 504]
+
+DEPTH_PRIORITY = -100
+
+CONCURRENT_ITEMS = 100
+
+
+DUPFILTER_CLASS = 'lyrics_crawler.dupfilter.URLFilter'
+
+# JOBDIR = 'crawls'

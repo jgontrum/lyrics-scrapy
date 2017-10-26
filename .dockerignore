@@ -11,3 +11,4 @@ README.md
 coverage*
 env/
 sonar*
+.scrapy

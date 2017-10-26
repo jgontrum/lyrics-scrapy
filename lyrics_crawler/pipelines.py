@@ -5,7 +5,6 @@
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 import langid
-from scrapy.exceptions import DropItem
 
 
 class LyricsCrawlerPipeline(object):
@@ -14,13 +13,11 @@ class LyricsCrawlerPipeline(object):
             v.strip() for v in item['lyrics'] if v.strip()
         ])
 
-        if len(item['lyrics']) < 10:
-            raise DropItem(
-                "{artist}: {title} - Lyrics too short: '{lyrics}'".format
-                (**item))
-        elif "Lyrics currently unavailable" in item['lyrics']:
-            raise DropItem(
-                "{artist}: {title} - Lyrics not available".format(**item))
+        if len(item['lyrics']) < 10 or \
+                        "Lyrics currently unavailable" in item['lyrics']:
+            item['valid'] = False
+        else:
+            item['valid'] = True
 
         language = langid.classify(item['lyrics'])
         item['language'] = language[0]

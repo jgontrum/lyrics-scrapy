@@ -101,3 +101,5 @@ ENV/
 
 coverage.xml
 *.cache
+
+.scrapy/

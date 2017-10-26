@@ -18,3 +18,4 @@ class LyricsCrawlerItem(scrapy.Item):
     language = scrapy.Field()
     lyrics = scrapy.Field()
     year = scrapy.Field()
+    valid = scrapy.Field()

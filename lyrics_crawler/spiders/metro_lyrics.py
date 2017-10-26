@@ -1,52 +1,56 @@
 # -*- coding: utf-8 -*-
+import os
+import re
 from copy import copy
 
 import scrapy
-import re
 
 from lyrics_crawler.items import LyricsCrawlerItem
 
 
-class ExampleSpider(scrapy.Spider):
+class MetroLyricsSpider(scrapy.Spider):
     name = 'MetroLyrics.com'
     allowed_domains = ['metrolyrics.com']
 
     start_urls = [
         f"http://www.metrolyrics.com/artists-{letter}.html"
-        for letter in "abcdefghijklmnopqrstuvwxyz"
+        for letter in os.environ.get("PAGES", "1abcdefghijklmnopqrstuvwxyz")
     ]
 
-    def _get_next_page(self, response):
-        next_url = response.xpath(
-            '//p[contains(@class, "pagination")]/a[contains(@class, "next")]/@href'
-        ).extract_first()
-
-        if next_url and next_url.startswith("http"):
-            return next_url
+    def _err_handler(self, failure):
+        self.logger.error("Failure: " + repr(failure))
+        self.logger.error("-> " + failure.response.url)
 
     def _artist_page_parse(self, response):
-        meta = response.meta['artist']
-        self.logger.debug("[ARTIST] {}".format(meta['artist']))
+        self.logger.info(
+            "[{} QUEUE] [ARTIST] {}".format(
+                len(self.crawler.engine.slot.scheduler),
+                response.meta['artist']['artist']
+            ))
 
         # Get by-album page url
         album_list = response.xpath(
             '//a[contains(@data-ref, "albums")]/@href').extract_first()
 
-        request = response.follow(album_list, self._album_list_parse)
-        request.meta['artist'] = meta
-        yield request
+        yield response.follow(
+            album_list,
+            callback=self._album_list_parse,
+            errback=self._err_handler,
+            meta=response.meta,
+            priority=100
+        )
 
     def _album_list_parse(self, response):
-        artist_meta = response.meta['artist']
+        meta = response.meta['artist']
 
         albums = response.xpath('//div[contains(@class, "album-track-list")]')
         for album in albums:
-            album_meta = copy(artist_meta)
+            album_meta = copy(meta)
             album_meta['album'] = album.xpath(
                 './/header//h3/span//text()').extract_first()
 
             year = album.xpath(".//header//h3/text()").extract_first() or ""
-            year = year.strip((" ()"))
+            year = year.strip(" ()")
 
             if year:
                 album_meta['year'] = int(year)
@@ -55,28 +59,41 @@ class ExampleSpider(scrapy.Spider):
                                     '//li//a')
 
             for song in song_urls:
-                title = song.xpath('./text()').extract_first().replace(
+                album_meta['title'] = song.xpath(
+                    './text()').extract_first().replace(
                     'Lyrics', '').strip()
                 song_url = song.xpath("./@href").extract_first()
 
-                request = response.follow(song_url, self._song_parse)
-                request.meta['album'] = album_meta
-                request.meta['song'] = title
-                yield request
+                req_meta = {"album": copy(album_meta)}
+                yield response.follow(
+                    song_url,
+                    callback=self._song_parse,
+                    errback=self._err_handler,
+                    meta=req_meta,
+                    priority=1000000
+                )
 
         # Follow next page
-        next_page = self._get_next_page(response)
-        if next_page:
-            request = response.follow(next_page, self._album_list_parse)
-            request.meta['artist'] = artist_meta
-            yield request
+        next_page = response.xpath(
+            '//p[contains(@class, "pagination")]/a[contains(@class, "next")]'
+            '/@href'
+        ).extract_first()
+
+        if next_page and next_page.startswith("http"):
+            yield response.follow(
+                next_page,
+                callback=self._album_list_parse,
+                errback=self._err_handler,
+                meta=response.meta,
+                priority=1000
+            )
 
     def _song_parse(self, response):
-        self.logger.debug("[SONG] {}: {}".format(
-            response.meta['album']['artist'], response.meta['song']))
+        self.logger.info("[{} QUEUE] [SONG] {}: {}".format(
+            len(self.crawler.engine.slot.scheduler),
+            response.meta['album']['artist'], response.meta['album']['title']))
 
-        song_meta = copy(response.meta['album'])
-        song_meta['title'] = response.meta['song']
+        song_meta = response.meta['album']
 
         song_meta['song_id'] = response.url.replace(
             "http://www.metrolyrics.com/", "").replace(
@@ -93,6 +110,8 @@ class ExampleSpider(scrapy.Spider):
         yield LyricsCrawlerItem(song_meta)
 
     def _artist_list_parse(self, response):
+        self.logger.info("Current pagination page: {}".format(response.url))
+
         for artist in response.xpath(
                 '//table[contains(@class, "songs-table")]/tbody//tr'):
             artist_url = artist.xpath(
@@ -118,19 +137,47 @@ class ExampleSpider(scrapy.Spider):
                         )[0]
                     )
             }
-
-            request = response.follow(artist_url, self._artist_page_parse)
-            request.meta['artist'] = meta
-            yield request
+            req_meta = {"artist": copy(meta)}
+            yield response.follow(
+                artist_url,
+                callback=self._artist_page_parse,
+                errback=self._err_handler,
+                meta=req_meta,
+                priority=-20
+            )
 
         # Follow next page
-        next_page = self._get_next_page(response)
-        if next_page:
-            yield response.follow(next_page, self._artist_list_parse)
+        next_page = response.xpath(
+            '//p[contains(@class, "pagination")]/a[contains(@class, "next")]'
+            '/@href'
+        ).extract_first()
+
+        if next_page and next_page.startswith("http"):
+            self.logger.info("Next page: '{}'".format(
+                next_page
+            ))
+            yield response.follow(
+                next_page,
+                callback=self._artist_list_parse,
+                errback=self._err_handler,
+                priority=-80
+            )
+        else:
+            self.logger.warning("No further pagination after '{}'".format(
+                response.url
+            ))
 
     def parse(self, response):
         # Get first pagination url
-        initial_page = self._get_next_page(response)
+        initial_page = response.xpath(
+            '//p[contains(@class, "pagination")]/a[contains(@class, "next")]'
+            '/@href'
+        ).extract_first()
 
-        if initial_page:
-            yield response.follow(initial_page, self._artist_list_parse)
+        if initial_page and initial_page.startswith("http"):
+            yield response.follow(
+                initial_page,
+                callback=self._artist_list_parse,
+                errback=self._err_handler,
+                priority=-1000
+            )
