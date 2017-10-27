@@ -9,7 +9,6 @@ env/bin/python:
 	env/bin/pip install --upgrade pip
 	env/bin/pip install wheel
 	env/bin/pip install -r requirements.txt
-	#env/bin/python setup.py develop
 
 crawl: env/bin/python
 	env/bin/scrapy crawl --loglevel=INFO Wikia.com
