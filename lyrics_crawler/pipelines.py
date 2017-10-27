@@ -23,8 +23,10 @@ class LyricsCrawlerPipeline(object):
         item['language'] = language[0]
 
         item['artist'] = item['artist'].strip()
-        item['album'] = item['album'].strip()
         item['title'] = item['title'].strip()
         item['lyrics'] = item['lyrics'].strip()
+
+        if 'album' in item:
+            item['album'] = item['album'].strip()
 
         return item
