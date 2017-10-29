@@ -15,7 +15,9 @@ class WikiaSpider(scrapy.Spider):
         'http://lyrics.wikia.com/wiki/Category:Artists_by_First_Letter']
 
     def _song(self, response):
-        self.logger.debug("Current song page: {}".format(response.url))
+        self.logger.info("[{} QUEUE] [SONG] {}: {}".format(
+            len(self.crawler.engine.slot.scheduler),
+            response.meta['artist'], response.meta['title']))
 
         meta = {
             "title": response.meta['title'],
@@ -60,7 +62,7 @@ class WikiaSpider(scrapy.Spider):
         ).extract_first()
 
         if artist_name:
-            artist_name=artist_name.strip()
+            artist_name = artist_name.strip()
             # Get all songs
             songs = response.xpath(
                 '//div[contains(@id, "WikiaArticle")]'

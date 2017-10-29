@@ -14,7 +14,7 @@ crawl: env/bin/python
 	env/bin/scrapy crawl --loglevel=INFO Wikia.com
 
 crawl-proxy: env/bin/python
-	http_proxy=http://rotatingproxy:20020 env/bin/scrapy crawl --loglevel=INFO Wikia.com
+	http_proxy=http://localhost:20020 env/bin/scrapy crawl --loglevel=INFO Wikia.com
 
 clean:
 	rm -rfv bin develop-eggs dist downloads eggs env parts .cache .scannerwork
